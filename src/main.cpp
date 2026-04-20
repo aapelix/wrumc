@@ -1,110 +1,153 @@
 #include "SDL3/SDL_blendmode.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_surface.h"
-#include <cstddef>
-#include <iostream>
+#include "SDL3/SDL_video.h"
+#include "net/isocket.hpp"
+#include "net/socket.hpp"
+#include "stack.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <cstddef>
+#include <iostream>
+#include <memory>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
-bool running = true;
-SDL_Window* window;
-SDL_Renderer* renderer;
-SDL_Texture* canvas;
-SDL_Event event;
-SDL_Texture* img;
-float rotation = 0;
+static bool running = true;
+static SDL_Window *window;
+static SDL_Renderer *renderer;
+static SDL_Texture *canvas;
+static SDL_Texture *img;
 
-Uint64 now, last = 0;
-double dt = 0;
+static Stack *stack;
+
+static float rotation = 0;
+
+static Uint64 now, last;
+static double dt;
+
+static std::unique_ptr<ISocket> socket;
+
+constexpr int CANVAS_WIDTH = 320;
+constexpr int CANVAS_HEIGHT = 240;
 
 static void loop() {
-    if (!running) {
-        SDL_DestroyTexture(img);
-        SDL_DestroyTexture(canvas);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+  if (!running) {
+    stack->destroy();
+    SDL_DestroyTexture(img);
+    SDL_DestroyTexture(canvas);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
-        #ifdef __EMSCRIPTEN__
-        emscripten_cancel_main_loop();
-        #else
-        exit(0);
-        #endif
+#ifdef __EMSCRIPTEN__
+    emscripten_cancel_main_loop();
+#else
+    exit(0);
+#endif
+  }
+
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    if (event.type == SDL_EVENT_QUIT) {
+      running = false;
     }
+  }
 
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_QUIT) {
-            running = false;
-        }
-    }
+  now = SDL_GetPerformanceCounter();
+  dt = (double)(now - last) / SDL_GetPerformanceFrequency();
+  last = now;
 
-    now = SDL_GetPerformanceCounter();
-    dt = (double)(now - last) / SDL_GetPerformanceFrequency();
-    last = now;
+  socket->poll();
 
-    rotation += 90 * dt;
+  rotation += 70 * dt;
 
-    SDL_SetRenderTarget(renderer, canvas);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+  SDL_SetRenderTarget(renderer, canvas);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  float img_w, img_h;
+  SDL_GetTextureSize(img, &img_w, &img_h);
+  SDL_FRect rect2 = {150, 150, img_w, img_h};
+  SDL_RenderTextureRotated(renderer, img, nullptr, &rect2, rotation, nullptr,
+                           SDL_FLIP_NONE);
 
-    SDL_FRect rect = { 100, 100, 200, 150 };
-    SDL_RenderFillRect(renderer, &rect);
+  stack->draw(renderer, 100, 200, rotation);
 
-    float img_w, img_h;
-    SDL_GetTextureSize(img, &img_w, &img_h);
-    SDL_FRect rect2 = { 150, 150, img_w, img_h };
-    SDL_RenderTextureRotated(renderer, img, nullptr, &rect2, rotation, nullptr, SDL_FLIP_NONE);
+  SDL_SetRenderTarget(renderer, nullptr);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
 
-    SDL_SetRenderTarget(renderer, nullptr);
-    SDL_RenderClear(renderer);
+  int w, h;
+  SDL_GetWindowSize(window, &w, &h);
 
-    int w, h;
-    SDL_GetWindowSize(window, &w, &h);
+  float scale = std::min((float)w / CANVAS_WIDTH, (float)h / CANVAS_HEIGHT);
 
-    SDL_FRect dst = { 0, 0, static_cast<float>(w), static_cast<float>(h) };
-    SDL_RenderTexture(renderer, canvas, nullptr, &dst);
-    SDL_RenderPresent(renderer);
+  float scaled_w = CANVAS_WIDTH * scale;
+  float scaled_h = CANVAS_HEIGHT * scale;
+
+  float x = (w - scaled_w) * 0.5f;
+  float y = (h - scaled_h) * 0.5f;
+
+  SDL_FRect dst = {x, y, scaled_w, scaled_h};
+  SDL_RenderTexture(renderer, canvas, nullptr, &dst);
+  SDL_RenderPresent(renderer);
 }
 
 int main() {
-    SDL_Init(SDL_INIT_VIDEO);
+  SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow("wrum", 1280, 720, 0);
-    if (!window) {
-        std::cout << "sdl window error " << SDL_GetError() << std::endl;
-        return 1;
-    }
+  SDL_CreateWindowAndRenderer("wrum", 1280, 720, SDL_WINDOW_RESIZABLE, &window,
+                              &renderer);
+  if (!window) {
+    std::cout << "sdl window error " << SDL_GetError() << std::endl;
+    return 1;
+  }
 
-    renderer = SDL_CreateRenderer(window, nullptr);
-    if (!renderer) {
-        std::cout << "sdl renderer error " << SDL_GetError() << std::endl;
-        return 1;
-    }
+  if (!renderer) {
+    std::cout << "sdl renderer error " << SDL_GetError() << std::endl;
+    return 1;
+  }
 
-    canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 320, 180);
-    if (!canvas) {
-        std::cout << "sdl canvas error " << SDL_GetError() << std::endl;
-        return 1;
-    }
+  canvas =
+      SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                        SDL_TEXTUREACCESS_TARGET, CANVAS_WIDTH, CANVAS_HEIGHT);
+  if (!canvas) {
+    std::cout << "sdl canvas error " << SDL_GetError() << std::endl;
+    return 1;
+  }
 
-    SDL_SetTextureScaleMode(canvas, SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_NONE);
+  SDL_SetTextureScaleMode(canvas, SDL_SCALEMODE_NEAREST);
+  SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_NONE);
 
-    img = IMG_LoadTexture(renderer, "assets/cars/img_1.png");
-    SDL_SetTextureScaleMode(img, SDL_SCALEMODE_NEAREST);
+  img = IMG_LoadTexture(renderer, "assets/cars/img_1.png");
+  SDL_SetTextureScaleMode(img, SDL_SCALEMODE_NEAREST);
 
-    #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(loop, 0, true);
-    #else
-    while (1) { loop(); }
-    #endif
+  stack = new Stack(renderer, "assets/cars");
 
-    return 0;
+  last = SDL_GetPerformanceCounter();
+
+  socket = Socket::create();
+  socket->onOpen = [] { SDL_Log("connected"); };
+  socket->onMessage = [](const std::string &m) {
+    SDL_Log("msg: %s", m.c_str());
+  };
+  socket->onError = [](const std::string &e) { SDL_Log("err: %s", e.c_str()); };
+  socket->onClose = [](uint16_t c, const std::string &r) {
+    SDL_Log("closed %d %s", c, r.c_str());
+  };
+
+  socket->connect("wss://echo.websocket.org");
+
+#ifdef __EMSCRIPTEN__
+  emscripten_set_main_loop(loop, 0, true);
+#else
+  while (1) {
+    loop();
+  }
+#endif
+
+  return 0;
 }
