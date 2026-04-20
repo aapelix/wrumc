@@ -1,9 +1,12 @@
-[submodule "external/SDL3"]
-	path = external/SDL3
-	url = https://github.com/libsdl-org/SDL
-[submodule "external/SDL_image"]
-	path = external/SDL_image
+[submodule "apps/client/external/SDL_image"]
+	path = apps/client/external/SDL_image
 	url = https://github.com/libsdl-org/SDL_image.git
-[submodule "external/libwebsockets"]
-	path = external/libwebsockets
-	url = https://libwebsockets.org/repo/libwebsockets
+[submodule "apps/client/external/ixwebsocket"]
+	path = apps/client/external/ixwebsocket
+	url = https://github.com/machinezone/IXWebSocket.git
+[submodule "apps/client/external/SDL3"]
+	path = apps/client/external/SDL3
+	url = https://github.com/libsdl-org/SDL
+[submodule "apps/server/external/uWebSockets"]
+	path = apps/server/external/uWebSockets
+	url = https://github.com/uNetworking/uWebSockets
