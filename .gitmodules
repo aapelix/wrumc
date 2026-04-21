@@ -1,15 +1,6 @@
-[submodule "apps/client/external/SDL_image"]
-	path = apps/client/external/SDL_image
+[submodule "subprojects/SDL3"]
+	path = subprojects/SDL3
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "subprojects/SDL3_image"]
+	path = subprojects/SDL3_image
 	url = https://github.com/libsdl-org/SDL_image.git
-[submodule "apps/client/external/ixwebsocket"]
-	path = apps/client/external/ixwebsocket
-	url = https://github.com/machinezone/IXWebSocket.git
-[submodule "apps/client/external/SDL3"]
-	path = apps/client/external/SDL3
-	url = https://github.com/libsdl-org/SDL
-[submodule "apps/server/external/uWebSockets"]
-	path = apps/server/external/uWebSockets
-	url = https://github.com/uNetworking/uWebSockets
-[submodule "shared/external/msgpack"]
-	path = shared/external/msgpack
-	url = https://github.com/msgpack/msgpack-c.git

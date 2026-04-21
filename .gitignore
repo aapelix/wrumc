@@ -1,3 +1,8 @@
 build/
-build-wasm/
 .cache/
+subprojects/SDL3_image/
+subprojects/SDL3/
+build*
+!build-sdl.sh
+prefix/
+emsdk/
