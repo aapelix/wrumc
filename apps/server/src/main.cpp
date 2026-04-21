@@ -6,8 +6,11 @@ int main() {
       .ws<std::string>(
           "/*", {.open = [](auto *ws) { std::cout << "Client connected\n"; },
 
-                 .message = [](auto *ws, std::string_view msg,
-                               uWS::OpCode op) { ws->send(msg, op); },
+                 .message =
+                     [](auto *ws, std::string_view msg, uWS::OpCode op) {
+                       std::cout << "Received message: " << msg << "\n";
+                       ws->send(msg, op);
+                     },
 
                  .close =
                      [](auto *ws, int code, std::string_view message) {

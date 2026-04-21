@@ -10,3 +10,6 @@
 [submodule "apps/server/external/uWebSockets"]
 	path = apps/server/external/uWebSockets
 	url = https://github.com/uNetworking/uWebSockets
+[submodule "shared/external/msgpack"]
+	path = shared/external/msgpack
+	url = https://github.com/msgpack/msgpack-c.git

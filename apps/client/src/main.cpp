@@ -130,7 +130,10 @@ int main() {
   last = SDL_GetPerformanceCounter();
 
   socket = Socket::create();
-  socket->onOpen = [] { SDL_Log("connected"); };
+  socket->onOpen = [] {
+    SDL_Log("connected");
+    socket->send("Hello, server!");
+  };
   socket->onMessage = [](const std::string &m) {
     SDL_Log("msg: %s", m.c_str());
   };
@@ -139,7 +142,7 @@ int main() {
     SDL_Log("closed %d %s", c, r.c_str());
   };
 
-  socket->connect("wss://echo.websocket.org");
+  socket->connect("ws://127.0.0.1:9001");
 
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, true);
