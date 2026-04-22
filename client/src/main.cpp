@@ -1,10 +1,13 @@
 #include "SDL3/SDL_surface.h"
 #include "SDL3/SDL_video.h"
+#include "src/net/isocket.hpp"
+#include "src/net/socket.hpp"
 #include "stack.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -22,6 +25,8 @@ static float rotation = 0;
 
 static Uint64 now, last;
 static double dt;
+
+static std::unique_ptr<ISocket> socket;
 
 constexpr int CANVAS_WIDTH = 320;
 constexpr int CANVAS_HEIGHT = 240;
@@ -52,6 +57,8 @@ static void loop() {
   now = SDL_GetPerformanceCounter();
   dt = (double)(now - last) / SDL_GetPerformanceFrequency();
   last = now;
+
+  socket->poll();
 
   rotation += 70 * dt;
 
@@ -119,6 +126,21 @@ int main() {
   stack = new Stack(renderer, "assets/cars");
 
   last = SDL_GetPerformanceCounter();
+
+  socket = Socket::create();
+  socket->onOpen = [] {
+    SDL_Log("connected");
+    socket->send("Hello, server!");
+  };
+  socket->onMessage = [](const std::string &m) {
+    SDL_Log("msg: %s", m.c_str());
+  };
+  socket->onError = [](const std::string &e) { SDL_Log("err: %s", e.c_str()); };
+  socket->onClose = [](uint16_t c, const std::string &r) {
+    SDL_Log("closed %d %s", c, r.c_str());
+  };
+
+  socket->connect("ws://localhost:8080");
 
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, true);

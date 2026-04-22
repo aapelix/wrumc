@@ -6,3 +6,4 @@ build*
 !build-sdl.sh
 prefix/
 emsdk/
+.DS_Store

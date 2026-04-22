@@ -4,3 +4,6 @@
 [submodule "subprojects/SDL3_image"]
 	path = subprojects/SDL3_image
 	url = https://github.com/libsdl-org/SDL_image.git
+[submodule "subprojects/ixwebsocket"]
+	path = subprojects/ixwebsocket
+	url = https://github.com/machinezone/IXWebSocket.git
