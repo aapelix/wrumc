@@ -26,7 +26,7 @@ static float rotation = 0;
 static Uint64 now, last;
 static double dt;
 
-static std::unique_ptr<ISocket> socket;
+static std::unique_ptr<ISocket> sock;
 
 constexpr int CANVAS_WIDTH = 320;
 constexpr int CANVAS_HEIGHT = 240;
@@ -58,7 +58,7 @@ static void loop() {
   dt = (double)(now - last) / SDL_GetPerformanceFrequency();
   last = now;
 
-  socket->poll();
+  sock->poll();
 
   rotation += 70 * dt;
 
@@ -127,20 +127,21 @@ int main() {
 
   last = SDL_GetPerformanceCounter();
 
-  socket = Socket::create();
-  socket->onOpen = [] {
+  sock = Socket::create();
+  sock->onOpen = [] {
     SDL_Log("connected");
-    socket->send("Hello, server!");
+    sock->send("Hello, server!");
   };
-  socket->onMessage = [](const std::string &m) {
-    SDL_Log("msg: %s", m.c_str());
-  };
-  socket->onError = [](const std::string &e) { SDL_Log("err: %s", e.c_str()); };
-  socket->onClose = [](uint16_t c, const std::string &r) {
+  sock->onMessage = [](const std::string &m) { SDL_Log("msg: %s", m.c_str()); };
+  sock->onError = [](const std::string &e) { SDL_Log("err: %s", e.c_str()); };
+  sock->onClose = [](uint16_t c, const std::string &r) {
     SDL_Log("closed %d %s", c, r.c_str());
   };
+  sock->onBinary = [](const uint8_t *data, uint32_t size) {
+    SDL_Log("binary msg: %d bytes", size);
+  };
 
-  socket->connect("ws://localhost:8080");
+  sock->connect("ws://localhost:8000");
 
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, true);

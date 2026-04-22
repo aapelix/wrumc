@@ -1,4 +1,5 @@
 #pragma once
+#include "net/msg.hpp"
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -16,7 +17,7 @@ public:
   virtual void connect(const std::string &url,
                        const std::string &protocols = "") = 0;
   virtual void send(const std::string &text) = 0;
-  virtual void send(const void *data, uint32_t length) = 0;
+  virtual void send(const Message &msg) = 0;
   virtual void close(uint16_t code = 1000, const std::string &reason = "") = 0;
   virtual bool isOpen() const = 0;
 

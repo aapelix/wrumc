@@ -1,5 +1,6 @@
 #pragma once
 #include "isocket.hpp"
+#include "net/msg.hpp"
 #include <ixwebsocket/IXWebSocket.h>
 
 #ifndef __EMSCRIPTEN__
@@ -12,7 +13,7 @@ public:
                const std::string &protocols = "") override;
 
   void send(const std::string &text) override;
-  void send(const void *data, uint32_t length) override;
+  void send(const Message &msg) override;
 
   void close(uint16_t code = 1000, const std::string &reason = "") override;
 

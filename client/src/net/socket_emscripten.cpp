@@ -45,9 +45,11 @@ void EmscriptenSocket::send(const std::string &text) {
     emscripten_websocket_send_utf8_text(m_ws, text.c_str());
 }
 
-void EmscriptenSocket::send(const void *data, uint32_t length) {
-  if (m_ws > 0)
-    emscripten_websocket_send_binary(m_ws, const_cast<void *>(data), length);
+void EmscriptenSocket::send(const Message &msg) {
+  if (m_ws > 0) {
+    std::string encoded = encode_message(msg);
+    emscripten_websocket_send_binary(m_ws, encoded.data(), encoded.size());
+  }
 }
 
 void EmscriptenSocket::close(unsigned short code, const std::string &reason) {

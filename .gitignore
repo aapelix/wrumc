@@ -7,3 +7,5 @@ build*
 prefix/
 emsdk/
 .DS_Store
+msgpack*/
+packagecache/

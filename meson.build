@@ -4,4 +4,7 @@ emscripten = host_machine.system() == 'emscripten'
 
 subdir('shared')
 subdir('client')
-subdir('server')
+
+if not emscripten
+    subdir('server')
+endif

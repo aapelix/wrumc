@@ -2,6 +2,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include "isocket.hpp"
+#include "net/msg.hpp"
 #include <emscripten/websocket.h>
 #include <string>
 
@@ -13,7 +14,7 @@ public:
   void connect(const std::string &url,
                const std::string &protocols = "") override;
   void send(const std::string &text) override;
-  void send(const void *data, uint32_t length) override;
+  void send(const Message &msg) override;
   void close(unsigned short code = 1000,
              const std::string &reason = "") override;
 

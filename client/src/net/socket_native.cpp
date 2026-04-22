@@ -1,6 +1,7 @@
+#include "net/msg.hpp"
 #ifndef __EMSCRIPTEN__
-#include "socket_native.hpp"
 #include "ixwebsocket/IXNetSystem.h"
+#include "socket_native.hpp"
 
 NativeSocket::NativeSocket() { ix::initNetSystem(); }
 
@@ -57,9 +58,9 @@ void NativeSocket::send(const std::string &text) {
     m_ws.send(text);
 }
 
-void NativeSocket::send(const void *data, uint32_t length) {
+void NativeSocket::send(const Message &msg) {
   if (m_open)
-    m_ws.sendBinary(std::string((const char *)data, length));
+    m_ws.sendBinary(encode_message(msg));
 }
 
 void NativeSocket::close(uint16_t code, const std::string &reason) {
