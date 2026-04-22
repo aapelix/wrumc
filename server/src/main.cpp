@@ -1,43 +1,26 @@
-#include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
+#include <App.h>
 #include <iostream>
 
-namespace beast = boost::beast;
-namespace websocket = beast::websocket;
-namespace net = boost::asio;
-using tcp = net::ip::tcp;
-
 int main() {
-  try {
-    net::io_context ioc;
+  uWS::App()
+      .ws<std::string>(
+          "/*", {.open = [](auto *ws) { std::cout << "Client connected\n"; },
 
-    tcp::acceptor acceptor(ioc, tcp::endpoint(tcp::v4(), 8000));
+                 .message =
+                     [](auto *ws, std::string_view msg, uWS::OpCode op) {
+                       std::cout << "Received message: " << msg << "\n";
+                       ws->send(msg, op);
+                     },
 
-    std::cout << "server listening on 8000" << std::endl;
-
-    for (;;) {
-      tcp::socket socket(ioc);
-      acceptor.accept(socket);
-
-      websocket::stream<tcp::socket> ws(std::move(socket));
-      ws.read_message_max(64 * 1024 * 1024);
-
-      beast::flat_buffer buffer;
-
-      ws.accept();
-
-      for (;;) {
-        ws.read(buffer);
-
-        std::string msg = beast::buffers_to_string(buffer.data());
-        std::cout << "recv: " << msg << "\n";
-
-        ws.text(ws.got_text());
-        ws.write(net::buffer("echo: " + msg));
-      }
-    }
-  } catch (std::exception const &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
-  }
+                 .close =
+                     [](auto *ws, int code, std::string_view message) {
+                       std::cout << "Client disconnected\n";
+                     }})
+      .listen(9001,
+              [](auto *token) {
+                if (token) {
+                  std::cout << "Listening on 9001\n";
+                }
+              })
+      .run();
 }

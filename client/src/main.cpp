@@ -141,7 +141,7 @@ int main() {
     SDL_Log("binary msg: %d bytes", size);
   };
 
-  sock->connect("ws://localhost:8000");
+  sock->connect("ws://localhost:9001");
 
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, true);

@@ -1,2 +1,2 @@
 todo:
-- replace boost.beast ws server
+- fix wasm websocket connection

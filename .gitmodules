@@ -7,3 +7,6 @@
 [submodule "subprojects/ixwebsocket"]
 	path = subprojects/ixwebsocket
 	url = https://github.com/machinezone/IXWebSocket.git
+[submodule "subprojects/uWebSockets"]
+	path = subprojects/uWebSockets
+	url = https://github.com/uNetworking/uWebSockets
