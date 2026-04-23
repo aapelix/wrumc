@@ -1,11 +1,14 @@
 #include "SDL3/SDL_surface.h"
 #include "SDL3/SDL_video.h"
+#include "net/msg.hpp"
 #include "src/net/isocket.hpp"
 #include "src/net/socket.hpp"
-#include "stack.hpp"
+#include "src/scene/game.hpp"
+#include "src/scene/manager.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <cstddef>
+#include <exception>
 #include <iostream>
 #include <memory>
 
@@ -17,14 +20,11 @@ static bool running = true;
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *canvas;
-static SDL_Texture *img;
-
-static Stack *stack;
-
-static float rotation = 0;
 
 static Uint64 now, last;
 static double dt;
+
+static SceneManager sceneManager;
 
 static std::unique_ptr<ISocket> sock;
 
@@ -33,8 +33,6 @@ constexpr int CANVAS_HEIGHT = 240;
 
 static void loop() {
   if (!running) {
-    stack->destroy();
-    SDL_DestroyTexture(img);
     SDL_DestroyTexture(canvas);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -60,19 +58,13 @@ static void loop() {
 
   sock->poll();
 
-  rotation += 70 * dt;
+  sceneManager.update((float)dt, sock.get());
 
   SDL_SetRenderTarget(renderer, canvas);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
-  float img_w, img_h;
-  SDL_GetTextureSize(img, &img_w, &img_h);
-  SDL_FRect rect2 = {150, 150, img_w, img_h};
-  SDL_RenderTextureRotated(renderer, img, nullptr, &rect2, rotation, nullptr,
-                           SDL_FLIP_NONE);
-
-  stack->draw(renderer, 100, 200, rotation);
+  sceneManager.draw(renderer);
 
   SDL_SetRenderTarget(renderer, nullptr);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -120,17 +112,12 @@ int main() {
   SDL_SetTextureScaleMode(canvas, SDL_SCALEMODE_NEAREST);
   SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_NONE);
 
-  img = IMG_LoadTexture(renderer, "assets/cars/img_1.png");
-  SDL_SetTextureScaleMode(img, SDL_SCALEMODE_NEAREST);
-
-  stack = new Stack(renderer, "assets/cars");
-
   last = SDL_GetPerformanceCounter();
 
   sock = Socket::create();
   sock->onOpen = [] {
     SDL_Log("connected");
-    sock->send("Hello, server!");
+    sock->send(ClientJoin{1});
   };
   sock->onMessage = [](const std::string &m) { SDL_Log("msg: %s", m.c_str()); };
   sock->onError = [](const std::string &e) { SDL_Log("err: %s", e.c_str()); };
@@ -139,9 +126,18 @@ int main() {
   };
   sock->onBinary = [](const uint8_t *data, uint32_t size) {
     SDL_Log("binary msg: %d bytes", size);
+
+    try {
+      Message m = decode_message((const char *)data, size);
+      sceneManager.handleMessage(renderer, m);
+    } catch (const std::exception &e) {
+      SDL_Log("decode error: %s", e.what());
+    };
   };
 
-  sock->connect("ws://localhost:9001");
+  sock->connect("ws://127.0.0.1:9001");
+
+  sceneManager.setScene(std::make_unique<GameScene>(renderer));
 
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, true);

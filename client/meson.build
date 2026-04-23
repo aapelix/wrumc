@@ -3,6 +3,8 @@ ixwebsocket_dep = declare_dependency()
 client_sources = files(
     'src/main.cpp',
     'src/net/socket.cpp',
+    'src/scene/game.cpp',
+    'src/scene/manager.cpp',
     'src/stack.cpp',
     'src/utils/assets.cpp',
 )

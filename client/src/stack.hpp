@@ -7,7 +7,8 @@ class Stack {
 public:
   Stack(SDL_Renderer *renderer, const char *path);
   void draw(SDL_Renderer *renderer, float x, float y, float rotation);
-  void destroy() {
+
+  ~Stack() {
     for (SDL_Texture *texture : textures) {
       SDL_DestroyTexture(texture);
     }

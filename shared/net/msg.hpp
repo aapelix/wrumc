@@ -9,15 +9,28 @@ struct ClientInput {
   MSGPACK_DEFINE(throttle, steering)
 };
 
-struct ServerState {
+struct ClientJoin {
+  int lobbyId;
+
+  MSGPACK_DEFINE(lobbyId)
+};
+
+struct ServerCar {
   float x;
   float y;
   float rotation;
+  int id;
 
   MSGPACK_DEFINE(x, y, rotation)
 };
 
-using Message = std::variant<ClientInput, ServerState>;
+struct LobbyState {
+  std::vector<ServerCar> players;
+
+  MSGPACK_DEFINE(players)
+};
+
+using Message = std::variant<ClientInput, ClientJoin, LobbyState>;
 
 template <std::size_t I = 0>
 void decode_variant(int type, const msgpack::object &data, Message &out) {
